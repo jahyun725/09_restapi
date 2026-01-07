@@ -1,0 +1,9 @@
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: mappers/**/*.xml
+  type-aliases-package: com.jinosoft.cqrs.product.query.dto
+
+spring:
+  profiles:
+    active: prd

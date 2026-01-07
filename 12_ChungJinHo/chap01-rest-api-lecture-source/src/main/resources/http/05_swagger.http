@@ -1,0 +1,11 @@
+### Swagger 테스트
+PUT {{baseUrl}}/swagger/users/1
+Content-Type: application/json
+
+{
+  "id": "user090909",
+  "pwd": "1q2w3e",
+  "name": "ㄴ"
+}
+
+
