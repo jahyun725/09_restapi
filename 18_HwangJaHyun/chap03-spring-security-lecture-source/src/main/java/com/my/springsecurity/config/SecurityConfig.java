@@ -2,6 +2,8 @@ package com.my.springsecurity.config;
 
 import com.my.springsecurity.jwt.JwtAuthenticationFilter;
 import com.my.springsecurity.jwt.JwtTokenProvider;
+import com.my.springsecurity.jwt.RestAccessDeniedHandler;
+import com.my.springsecurity.jwt.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,11 +21,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // @PreAuthorize, @PostAuthorize
+@EnableMethodSecurity  // controller에서 처리하게 함, @PreAuthorize, @PostAuthorize
 @RequiredArgsConstructor
 public class SecurityConfig {
   private final JwtTokenProvider jwtTokenProvider;
   private final UserDetailsService userDetailsService;
+  private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+  private final RestAccessDeniedHandler restAccessDeniedHandler;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -44,18 +48,27 @@ public class SecurityConfig {
         .sessionManagement(session
                 -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         )
+        // 인증, 인가 실패 핸들러 추가
+        .exceptionHandling(exception
+                -> exception
+                  .authenticationEntryPoint(restAuthenticationEntryPoint)
+                .accessDeniedHandler(restAccessDeniedHandler)
+        )
         // 요청 http method, url 기준으로 인증, 인가 필요 여부를 설정
         .authorizeHttpRequests(auth
                 -> auth
-                // 회원 가입, 로그인은 누구나 허용(인증 필요 X)
+                // 회원 가입, 로그인, 리프레시토큰재발급은 누구나 허용(인증 필요 X)
                 .requestMatchers(HttpMethod.POST,
-                  "/api/v1/users", "api/v1/auth/login").permitAll()
+                  "/api/v1/users",
+                  "api/v1/auth/login",
+                  "api/v1/auth/refresh",
+                  "api/v1/admin").permitAll()
 
                 // 내 정보 조회는 USER 권한이 필요
                 .requestMatchers(HttpMethod.GET,
                   "/api/v1/users/me").hasAuthority("USER")
 
-                //위 요청을 제외한 나머지 요청은 인증이 필요함
+                //위 요청을 제외한 나머지 요청은 인증이 필요함 (login : 인증된 상태)
                 .anyRequest().authenticated()
         )
         // UsernamePasswordAuthenticationFilter 앞에

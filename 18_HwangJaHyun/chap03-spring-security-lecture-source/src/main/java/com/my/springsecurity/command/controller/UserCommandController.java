@@ -29,4 +29,17 @@ public class UserCommandController {
     return ResponseEntity.status(HttpStatus.CREATED) // 201 Create (삽입/저장) 성공
       .body(ApiResponse.success(null));
   }
+
+  /* 회원가입 */
+  @PostMapping("/admin")
+  public ResponseEntity<ApiResponse<Void>> registerAdmin(
+      @RequestBody UserCreateRequest userCreateRequest
+  ){
+
+    // 서비스 호출
+    userCommandService.registAdmin(userCreateRequest);
+
+    return ResponseEntity.status(HttpStatus.CREATED) // 201 Create (삽입/저장) 성공
+        .body(ApiResponse.success(null));
+  }
 }
