@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/cqrs
+    username: swcamp
+    password: swcamp
+  jpa:
+    hibernate:
+      ddl-auto: create #???? ??? ??? ??? ??
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: mappers/**/*.xml
+  type-aliases-package: com.my.springsecurity.query.dto
+
+# JWT 원래 프로파일에 따로 적어줘야댐
+jwt:
+  secret: nrpzxi/fnNBGmKtImrUfgHpQV70WFl32rcY3jOI2a6Vnh5pWYbjzfi95tj8g93ydM8egaYcE4oSp/O5BD+fzDQ==
+  expiration: 1800000 # ms, 30분 (accessToken 만료 시간)
+  refresh-expiration: 604800000 # 일주일 (refreshToken 만료 시간)

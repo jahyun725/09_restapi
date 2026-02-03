@@ -1,0 +1,11 @@
+# dev
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/cqrs
+    username: swcamp
+    password: swcamp
+
+image:
+  image-dir: C:/upload/productimgs
+  image-url: http://localhost:8080/productimgs/
