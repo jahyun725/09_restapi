@@ -2,6 +2,8 @@ package com.ohgiraffers.springsecurity.config;
 
 import com.ohgiraffers.springsecurity.jwt.JwtAuthenticationFilter;
 import com.ohgiraffers.springsecurity.jwt.JwtTokenProvider;
+import com.ohgiraffers.springsecurity.jwt.RestAccessDeniedHandler;
+import com.ohgiraffers.springsecurity.jwt.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +18,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -25,6 +30,8 @@ public class SecurityConfig {
 
   private final JwtTokenProvider jwtTokenProvider;
   private final UserDetailsService userDetailsService;
+  private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+  private final RestAccessDeniedHandler restAccessDeniedHandler;
 
 
   @Bean
@@ -46,12 +53,23 @@ public class SecurityConfig {
         .sessionManagement(session 
             -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+        /* 인증, 인가 실패 핸들러 추가 */
+        .exceptionHandling( exception ->
+            exception
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
+                .accessDeniedHandler(restAccessDeniedHandler)
+        )
+
         // 요청 http method, url 기준으로 인증, 인가 필요 여부를 설정
         .authorizeHttpRequests(auth
             -> auth
             // 회원 가입, 로그인은 누구나 허용(인증 필요 없음)
             .requestMatchers(
-                HttpMethod.POST, "/api/v1/users", "/api/v1/auth/login").permitAll()
+                HttpMethod.POST,
+                "/api/v1/users",
+                "/api/v1/auth/login",
+                "/api/v1/auth/refresh",
+                "/api/v1/admin").permitAll()
 
             // 내 정보 조회는 USER 권한이 필요
             .requestMatchers(
@@ -67,7 +85,11 @@ public class SecurityConfig {
             jwtAuthenticationFilter(),
             UsernamePasswordAuthenticationFilter.class
         );
-    
+
+    /* CORS 설정 */
+    http.cors(cors -> cors
+        .configurationSource(corsConfigurationSource()));
+
     return http.build();
   }
 
@@ -75,6 +97,26 @@ public class SecurityConfig {
   @Bean
   public JwtAuthenticationFilter jwtAuthenticationFilter(){
     return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
+  }
+
+  @Bean
+  public CorsFilter corsFilter() {
+    return new CorsFilter(corsConfigurationSource());
+  }
+
+  @Bean
+  public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.addAllowedOrigin("http://localhost:5173"); // 허용할 도메인
+    config.addAllowedHeader("*"); // 모든 헤더 허용
+    config.addAllowedMethod("*"); // 모든 HTTP 메소드 허용
+    
+    // HttpOnly Cookie 사용
+    config.setAllowCredentials(true);// 자격 증명(쿠키 등) 허용
+    
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);// 모든 경로에 대해 설정
+    return source;
   }
 
 }

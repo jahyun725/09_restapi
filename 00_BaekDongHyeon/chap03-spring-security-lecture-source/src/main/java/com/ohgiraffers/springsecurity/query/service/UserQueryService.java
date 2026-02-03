@@ -2,10 +2,12 @@ package com.ohgiraffers.springsecurity.query.service;
 
 import com.ohgiraffers.springsecurity.query.dto.UserDTO;
 import com.ohgiraffers.springsecurity.query.dto.UserDetailResponse;
+import com.ohgiraffers.springsecurity.query.dto.UserListResponse;
 import com.ohgiraffers.springsecurity.query.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -22,6 +24,14 @@ public class UserQueryService {
 
     return UserDetailResponse.builder()
         .user(user)
+        .build();
+  }
+
+  public UserListResponse getAllUser() {
+    List<UserDTO> users = userMapper.findAllUsers();
+
+    return UserListResponse.builder()
+        .users(users)
         .build();
   }
 }

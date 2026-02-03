@@ -17,6 +17,7 @@ public class UserCommandService {
   private final ModelMapper modelMapper;
   private final PasswordEncoder passwordEncoder;
 
+  /* USER 등록 */
   @Transactional
   public void registUser(UserCreateRequest userCreateRequest){
 
@@ -31,6 +32,27 @@ public class UserCommandService {
     /* 저장 */
     userRepository.save(user);
   }
+
+
+  /* ADMIN 등록 */
+  @Transactional
+  public void registAdmin(UserCreateRequest userCreateRequest){
+
+    /* request(DTO) -> Entity */
+    User user = modelMapper.map(userCreateRequest, User.class);
+
+    /* 비밀번호를 암호화 하여 Entity에 세팅 */
+    user.setEncodedPassword(
+        passwordEncoder.encode(userCreateRequest.getPassword())
+    );
+    
+    /* 권한 변경 */
+    user.modifyRole("ADMIN");
+
+    /* 저장 */
+    userRepository.save(user);
+  }
+
 
 
 }

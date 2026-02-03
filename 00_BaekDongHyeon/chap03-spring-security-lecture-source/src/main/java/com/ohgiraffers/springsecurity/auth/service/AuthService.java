@@ -60,4 +60,78 @@ public class AuthService {
         .build();
   }
 
+
+  /* refresh token 검증 후 새 토큰 발급 서비스  */
+  public TokenResponse refreshToken(String provideRefreshToken) {
+
+    // 리프레시 토큰 유효성 검사
+    jwtTokenProvider.validateToken(provideRefreshToken);
+
+    // 전달 받은 리프레시 토큰에서 사용자 이름(username) 얻어오기
+    String username = jwtTokenProvider.getUsernameFromJWT(provideRefreshToken);
+
+    // DB에서 username이 일치하는 행의 리프레시 토큰 조회
+    RefreshToken storedToken = authRepository.findById(username)
+        .orElseThrow(()
+            -> new BadCredentialsException("해당 유저로 조회되는 리프레시토큰 없음"));
+
+    // 요청 시 전달 받은 토큰과
+    // DB에 저장된 토큰이 일치하는지 확인
+    if(!storedToken.getToken().equals(provideRefreshToken)){
+      throw new BadCredentialsException("리프레시 토큰이 일치하지 않음");
+    }
+
+    // DB에 저장된 토큰의 만료 기간이 현재 시간 보다 과거인지 확인
+    // (만료 기간이 지났는지 확인)
+    if(storedToken.getExpiryDate().before(new Date())){
+      throw new BadCredentialsException("리프레시 토큰 유효 기간 만료");
+    }
+
+    // username이 일치하는 회원(User) 조회
+    User user = userRepository.findByUsername(username)
+        .orElseThrow(() -> new BadCredentialsException("해당 유저 없음"));
+
+
+    // 새 토큰 발급
+    String accessToken
+        = jwtTokenProvider.createToken(user.getUsername(), user.getRole().name());
+
+    String refreshToken
+        = jwtTokenProvider.createRefreshToken(user.getUsername(), user.getRole().name());
+
+
+    // RefreshToken 엔티티 생성(저장용)
+    RefreshToken tokenEntity = RefreshToken.builder()
+        .username(username)
+        .token(refreshToken)
+        .expiryDate(
+            new Date(
+                System.currentTimeMillis()
+                + jwtTokenProvider.getRefreshExpiration()
+            )
+        )
+        .build();
+
+
+    // DB 저장 (PK 중복 행이 이미 존재 -> UPDATE)
+    authRepository.save(tokenEntity);
+
+    return TokenResponse.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .build();
+  }
+
+
+  /* DB refreshToken 삭제 */
+  public void logout(String refreshToken) {
+
+    /* refreshToken 검증 절차 */
+    jwtTokenProvider.validateToken(refreshToken);
+
+    String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
+
+    authRepository.deleteById(username); // DB에서 username이 일치하는 행 삭제
+
+  }
 }
